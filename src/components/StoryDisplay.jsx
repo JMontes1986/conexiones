@@ -8,7 +8,7 @@ function StoryDisplay({ story, loading, fragmentCount, onRegenerate }) {
               📖 La Historia Colectiva
             </h2>
             <p className="text-sm text-gray-600">
-              Generada por IA con {fragmentCount} fragmentos de la comunidad
+              Generada automáticamente con {fragmentCount} fragmentos de la comunidad
             </p>
           </div>
           
@@ -25,7 +25,7 @@ function StoryDisplay({ story, loading, fragmentCount, onRegenerate }) {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">La IA está tejiendo la historia...</p>
+              <p className="text-gray-600">La historia se está generando...</p>
             </div>
           </div>
         ) : story ? (
