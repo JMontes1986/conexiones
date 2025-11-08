@@ -29,9 +29,9 @@ function App() {
 
   // Cargar fragmentos y generar historia al inicio
   useEffect(() => {
-    if (!isSupabaseConfigured) return
+    if (!supabaseConfigured) return
     loadFragmentsAndGenerateStory()
-  }, [supabaseClient])
+  }, [supabaseClient, supabaseConfigured])
 
   async function loadFragmentsAndGenerateStory() {
     if (!supabaseClient) {
