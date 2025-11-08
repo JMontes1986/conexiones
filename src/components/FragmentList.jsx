@@ -1,3 +1,5 @@
+import React from 'react'
+
 function FragmentList({ items }) {
   // Formatear fecha de forma relativa simple
   function formatDate(dateString) {
