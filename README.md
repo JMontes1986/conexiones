@@ -67,6 +67,8 @@ Puedes desplegar en cualquier plataforma:
 # Publish directory: dist
 ```
 
+> ℹ️ Si al abrir tu deploy ves el mensaje "Password protected site", desactiva la contraseña desde **Site settings → General → Site protection** en Netlify o limpia cualquier contraseña configurada en **Access control**. Esto asegura que la app quede disponible públicamente.
+> 
 **Vercel:**
 ```bash
 # Instala Vercel CLI
