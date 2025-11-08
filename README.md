@@ -67,7 +67,20 @@ Puedes desplegar en cualquier plataforma:
 # Publish directory: dist
 ```
 
+
+### Quitar el mensaje "Password protected site" en Netlify
+
 > ℹ️ Si al abrir tu deploy ves el mensaje "Password protected site", desactiva la contraseña desde **Site settings → General → Site protection** en Netlify o limpia cualquier contraseña configurada en **Access control**. Esto asegura que la app quede disponible públicamente.
+
+Pasos rápidos:
+
+1. Abre tu proyecto en el panel de Netlify.
+2. Ve a **Site configuration → Site protection**.
+3. Desactiva la opción **Password protect your site** y guarda los cambios.
+4. Si configuraste accesos restringidos, visita **Access control** y elimina cualquier contraseña o lista de acceso.
+5. Refresca tu sitio; ya no debería aparecer la pantalla de bloqueo.
+
+> ✅ No es necesario modificar el código del proyecto; esta protección es una configuración propia de Netlify.
 > 
 **Vercel:**
 ```bash
