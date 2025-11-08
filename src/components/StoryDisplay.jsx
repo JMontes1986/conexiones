@@ -1,3 +1,5 @@
+import React from 'react'
+
 function StoryDisplay({ story, loading, fragmentCount, onRegenerate }) {
   return (
     <section className="mb-12">
