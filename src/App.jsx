@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from './lib/supabaseClient'
+import { supabase, isSupabaseConfigured } from './lib/supabaseClient'
 import KeywordForm from './components/KeywordForm'
 import FragmentList from './components/FragmentList'
 import StoryDisplay from './components/StoryDisplay'
@@ -23,10 +23,16 @@ function App() {
 
   // Cargar fragmentos y generar historia al inicio
   useEffect(() => {
+    if (!isSupabaseConfigured) return
     loadFragmentsAndGenerateStory()
-  }, [])
+  }, [isSupabaseConfigured])
 
   async function loadFragmentsAndGenerateStory() {
+    if (!isSupabaseConfigured) {
+      setStory('Configura las variables de entorno de Supabase para ver la historia generada automáticamente.')
+      return
+    }
+    
     try {
       // Cargar últimos 20 fragmentos
       const { data, error: fetchError } = await supabase
@@ -50,17 +56,17 @@ function App() {
 
   async function generateStoryFromFragments(fragments) {
     if (fragments.length === 0) return
-    
-setLoadingStory(true)
 
- try {
+    setLoadingStory(true)
+
+    try {
       const intro = 'Esta historia se genera automáticamente a partir de los fragmentos más recientes:'
       const selectedFragments = fragments.slice(0, 6)
 
       const paragraphs = selectedFragments.map((fragment, index) => {
         const prefix = `Fragmento ${index + 1} (${fragment.keyword}):`
         return `${prefix} ${fragment.content}`
-        })
+      })
 
       setStory([intro, '', ...paragraphs].join('\n'))
     } catch (err) {
@@ -74,6 +80,11 @@ setLoadingStory(true)
   // Buscar fragmentos
   async function searchFragments(searchTerm) {
     if (!searchTerm.trim()) return
+
+    if (!isSupabaseConfigured) {
+      setError('La aplicación no está configurada con Supabase. Agrega las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para habilitar las búsquedas.')
+      return
+    }
     
     setLoading(true)
     setError(null)
@@ -115,6 +126,11 @@ setLoadingStory(true)
   // Agregar nuevo fragmento
   async function addFragment(e) {
     e.preventDefault()
+    
+     if (!isSupabaseConfigured) {
+      setError('No es posible publicar fragmentos sin configurar Supabase.')
+      return
+    }
     
     const trimmedKeyword = newKeyword.trim()
     const trimmedContent = newContent.trim()
@@ -162,7 +178,20 @@ setLoadingStory(true)
     searchFragments(keyword)
   }
 
-  return (
+  return !isSupabaseConfigured ? (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-xl bg-white border border-gray-200 rounded-lg p-8 shadow-sm text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Conexiones</h1>
+        <p className="text-gray-700 mb-4">
+          La aplicación necesita configurarse con Supabase para cargar y crear fragmentos.
+        </p>
+        <p className="text-gray-600">
+          Añade las variables de entorno <code className="bg-gray-100 px-2 py-1 rounded">VITE_SUPABASE_URL</code> y{' '}
+          <code className="bg-gray-100 px-2 py-1 rounded">VITE_SUPABASE_ANON_KEY</code> en tu entorno de despliegue.
+        </p>
+      </div>
+    </div>
+  ) : (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
