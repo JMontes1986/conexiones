@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { getSupabaseClient, isSupabaseConfigured } from './lib/supabaseClient'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import KeywordForm from './components/KeywordForm'
 import FragmentList from './components/FragmentList'
 import StoryDisplay from './components/StoryDisplay'
@@ -27,13 +27,7 @@ function App() {
   const [loadingStory, setLoadingStory] = useState(false)
   const [allFragments, setAllFragments] = useState([])
 
-  // Cargar fragmentos y generar historia al inicio
-  useEffect(() => {
-    if (!supabaseConfigured) return
-    loadFragmentsAndGenerateStory()
-  }, [supabaseClient, supabaseConfigured])
-
-  async function loadFragmentsAndGenerateStory() {
+  const loadFragmentsAndGenerateStory = useCallback(async () => {
     if (!supabaseClient) {
       setStory('Configura las variables de entorno de Supabase para ver la historia generada automáticamente.')
       return
@@ -58,7 +52,34 @@ function App() {
     } catch (err) {
       console.error('Error cargando fragmentos:', err)
     }
-  }
+  }, [supabaseClient])
+
+  // Cargar fragmentos y generar historia al inicio
+  useEffect(() => {
+    if (!supabaseConfigured) return
+    loadFragmentsAndGenerateStory()
+  }, [loadFragmentsAndGenerateStory, supabaseConfigured])
+
+  useEffect(() => {
+    if (!supabaseClient) return
+
+    const channel = supabaseClient
+      .channel('fragments-live-updates')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'fragments' },
+        () => {
+          loadFragmentsAndGenerateStory()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      if (channel) {
+        supabaseClient.removeChannel(channel)
+      }
+    }
+  }, [supabaseClient, loadFragmentsAndGenerateStory])
 
   async function generateStoryFromFragments(fragments) {
     if (fragments.length === 0) return
