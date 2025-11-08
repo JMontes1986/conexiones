@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react'
-import { supabase, isSupabaseConfigured } from './lib/supabaseClient'
+import { useState, useEffect, useMemo } from 'react'
+import { getSupabaseClient, isSupabaseConfigured } from './lib/supabaseClient'
 import KeywordForm from './components/KeywordForm'
 import FragmentList from './components/FragmentList'
 import StoryDisplay from './components/StoryDisplay'
 
 function App() {
+  const supabaseConfigured = isSupabaseConfigured()
+  const supabaseClient = useMemo(
+    () => (supabaseConfigured ? getSupabaseClient() : null),
+    [supabaseConfigured]
+  )
+  
   const [view, setView] = useState('home') // 'home' o 'search'
   const [keyword, setKeyword] = useState('')
   const [results, setResults] = useState([])
@@ -25,17 +31,17 @@ function App() {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     loadFragmentsAndGenerateStory()
-  }, [isSupabaseConfigured])
+  }, [supabaseClient])
 
   async function loadFragmentsAndGenerateStory() {
-    if (!isSupabaseConfigured) {
+    if (!supabaseClient) {
       setStory('Configura las variables de entorno de Supabase para ver la historia generada automáticamente.')
       return
     }
     
     try {
       // Cargar últimos 20 fragmentos
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await supabaseClient
         .from('fragments')
         .select('*')
         .order('created_at', { ascending: false })
@@ -81,7 +87,7 @@ function App() {
   async function searchFragments(searchTerm) {
     if (!searchTerm.trim()) return
 
-    if (!isSupabaseConfigured) {
+    if (!supabaseConfigured) {
       setError('La aplicación no está configurada con Supabase. Agrega las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para habilitar las búsquedas.')
       return
     }
@@ -93,7 +99,7 @@ function App() {
     try {
       const like = `%${searchTerm.trim()}%`
       
-      const { data: keywordData, error: keywordError } = await supabase
+      const { data: keywordData, error: keywordError } = await supabaseClient
         .from('fragments')
         .select('*')
         .ilike('keyword', like)
@@ -105,7 +111,7 @@ function App() {
       if (keywordData && keywordData.length > 0) {
         setResults(keywordData)
       } else {
-        const { data: contentData, error: contentError } = await supabase
+        const { data: contentData, error: contentError } = await supabaseClient
           .from('fragments')
           .select('*')
           .ilike('content', like)
@@ -127,7 +133,7 @@ function App() {
   async function addFragment(e) {
     e.preventDefault()
     
-     if (!isSupabaseConfigured) {
+     if (!supabaseConfigured) {
       setError('No es posible publicar fragmentos sin configurar Supabase.')
       return
     }
@@ -149,7 +155,7 @@ function App() {
     setError(null)
     
     try {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseClient
         .from('fragments')
         .insert([{ keyword: trimmedKeyword, content: trimmedContent }])
       
@@ -178,7 +184,7 @@ function App() {
     searchFragments(keyword)
   }
 
-  return !isSupabaseConfigured ? (
+  return !supabaseConfigured ? (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-xl bg-white border border-gray-200 rounded-lg p-8 shadow-sm text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Conexiones</h1>
