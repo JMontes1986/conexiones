@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { getSupabaseClient, isSupabaseConfigured } from './lib/supabaseClient'
 import KeywordForm from './components/KeywordForm'
 import FragmentList from './components/FragmentList'
 import StoryDisplay from './components/StoryDisplay'
+
+const STORY_INTRO =
+  'Esta historia se genera automáticamente a partir de los fragmentos más recientes:'
 
 function App() {
   const supabaseConfigured = isSupabaseConfigured()
@@ -26,52 +29,103 @@ function App() {
   const [story, setStory] = useState('')
   const [loadingStory, setLoadingStory] = useState(false)
   const [allFragments, setAllFragments] = useState([])
+  const [storyFragments, setStoryFragments] = useState([])
 
-  const loadFragmentsAndGenerateStory = useCallback(async () => {
+  const createStoryText = useCallback(
+    (fragments) => {
+      if (!fragments || fragments.length === 0) {
+        return ''
+      }
+
+      const paragraphs = fragments.map((fragment, index) => {
+        const prefix = `Fragmento ${index + 1} (${fragment.keyword}):`
+        return `${prefix} ${fragment.content}`
+      })
+
+      return [STORY_INTRO, '', ...paragraphs].join('\n')
+    },
+    []
+  )
+
+  const loadFragments = useCallback(async () => {
     if (!supabaseClient) {
       setStory('Configura las variables de entorno de Supabase para ver la historia generada automáticamente.')
+      setStoryFragments([])
+      setAllFragments([])
       return
     }
+
+    setLoadingStory(true)
     
     try {
-      // Cargar últimos 20 fragmentos
       const { data, error: fetchError } = await supabaseClient
         .from('fragments')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(20)
       
       if (fetchError) throw fetchError
       
-      setAllFragments(data || [])
-      
-      // Generar historia automáticamente si hay fragmentos
-      if (data && data.length > 0) {
-        await generateStoryFromFragments(data)
-      }
+      const fragments = data || []
+      setStoryFragments(fragments)
+      setStory(createStoryText(fragments))
+      setAllFragments([...fragments].reverse())
     } catch (err) {
       console.error('Error cargando fragmentos:', err)
+      setStory('No se pudo cargar la historia en este momento.')
+      setStoryFragments([])
+    } finally {
+      setLoadingStory(false)
     }
-  }, [supabaseClient])
+  }, [createStoryText, supabaseClient])
 
-  // Cargar fragmentos y generar historia al inicio
+  const appendFragment = useCallback(
+    (newFragment) => {
+      if (!newFragment) return
+
+      setStoryFragments((prev) => {
+        if (prev.some((fragment) => fragment.id === newFragment.id)) {
+          return prev
+        }
+
+        const updated = [...prev, newFragment]
+        const limited = updated.slice(-20)
+        setStory(createStoryText(limited))
+        return limited
+      })
+
+      setAllFragments((prev) => {
+        if (prev.some((fragment) => fragment.id === newFragment.id)) {
+          return prev
+        }
+
+        const updated = [newFragment, ...prev]
+        return updated.slice(0, 20)
+      })
+    },
+    [createStoryText]
+  )
+
+  // Cargar fragmentos al inicio
   useEffect(() => {
-    if (!supabaseConfigured) return
-    loadFragmentsAndGenerateStory()
-  }, [loadFragmentsAndGenerateStory, supabaseConfigured])
+    if (!supabaseConfigured) {
+      setStory('Configura las variables de entorno de Supabase para ver la historia generada automáticamente.')
+      setStoryFragments([])
+      setAllFragments([])
+      return
+    }
+
+    loadFragments()
+  }, [loadFragments, supabaseConfigured])
 
   useEffect(() => {
     if (!supabaseClient) return
 
     const channel = supabaseClient
       .channel('fragments-live-updates')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'fragments' },
-        () => {
-          loadFragmentsAndGenerateStory()
-        }
-      )
+     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fragments' }, (payload) => {
+        appendFragment(payload.new)
+      })
       .subscribe()
 
     return () => {
@@ -79,31 +133,8 @@ function App() {
         supabaseClient.removeChannel(channel)
       }
     }
-  }, [supabaseClient, loadFragmentsAndGenerateStory])
-
-  async function generateStoryFromFragments(fragments) {
-    if (fragments.length === 0) return
-
-    setLoadingStory(true)
-
-    try {
-      const intro = 'Esta historia se genera automáticamente a partir de los fragmentos más recientes:'
-      const selectedFragments = fragments.slice(0, 6)
-
-      const paragraphs = selectedFragments.map((fragment, index) => {
-        const prefix = `Fragmento ${index + 1} (${fragment.keyword}):`
-        return `${prefix} ${fragment.content}`
-      })
-
-      setStory([intro, '', ...paragraphs].join('\n'))
-    } catch (err) {
-      console.error('Error generando historia local:', err)
-      setStory('No se pudo generar la historia en este momento.')
-    } finally {
-      setLoadingStory(false)
-    }
-  }
-
+  }, [appendFragment, supabaseClient])
+  
   // Buscar fragmentos
   async function searchFragments(searchTerm) {
     if (!searchTerm.trim()) return
@@ -154,7 +185,7 @@ function App() {
   async function addFragment(e) {
     e.preventDefault()
     
-     if (!supabaseConfigured) {
+    if (!supabaseConfigured) {
       setError('No es posible publicar fragmentos sin configurar Supabase.')
       return
     }
@@ -176,19 +207,20 @@ function App() {
     setError(null)
     
     try {
-      const { error: insertError } = await supabaseClient
+      const { data: insertedFragment, error: insertError } = await supabaseClient
         .from('fragments')
         .insert([{ keyword: trimmedKeyword, content: trimmedContent }])
+        .select()
+        .single()
       
       if (insertError) throw insertError
+
+      appendFragment(insertedFragment)
       
       setNewKeyword('')
       setNewContent('')
       
-      // Recargar fragmentos y regenerar historia
-      await loadFragmentsAndGenerateStory()
-      
-      alert('¡Fragmento publicado! La historia se está actualizando...')
+      alert('¡Fragmento publicado! La historia se actualizará automáticamente.')
       
       // Volver al home para ver la nueva historia
       setView('home')
@@ -258,11 +290,10 @@ function App() {
         {/* Vista Home: Historia generada */}
         {view === 'home' && (
           <>
-            <StoryDisplay 
-              story={story} 
+            <StoryDisplay
+              story={story}
               loading={loadingStory}
-              fragmentCount={allFragments.length}
-              onRegenerate={loadFragmentsAndGenerateStory}
+              fragmentCount={storyFragments.length}
             />
             
             {/* Últimos fragmentos */}
@@ -366,7 +397,7 @@ function App() {
               disabled={addingFragment}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {addingFragment ? 'Publicando...' : 'Publicar y Regenerar Historia'}
+              {addingFragment ? 'Publicando...' : 'Publicar fragmento'}
             </button>
           </form>
         </section>
