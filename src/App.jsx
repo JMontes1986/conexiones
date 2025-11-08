@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { getSupabaseClient, isSupabaseConfigured } from './lib/supabaseClient'
 import KeywordForm from './components/KeywordForm'
 import FragmentList from './components/FragmentList'
