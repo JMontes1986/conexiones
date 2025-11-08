@@ -16,7 +16,7 @@ function App() {
   const [newContent, setNewContent] = useState('')
   const [addingFragment, setAddingFragment] = useState(false)
   
-  // Estado para la historia generada por IA
+  // Estado para la historia generada automáticamente
   const [story, setStory] = useState('')
   const [loadingStory, setLoadingStory] = useState(false)
   const [allFragments, setAllFragments] = useState([])
@@ -39,7 +39,7 @@ function App() {
       
       setAllFragments(data || [])
       
-      // Generar historia con IA si hay fragmentos
+      // Generar historia automáticamente si hay fragmentos
       if (data && data.length > 0) {
         await generateStoryFromFragments(data)
       }
@@ -51,52 +51,20 @@ function App() {
   async function generateStoryFromFragments(fragments) {
     if (fragments.length === 0) return
     
-    setLoadingStory(true)
-    
-    try {
-      // Preparar los fragmentos para la IA
-      const fragmentsText = fragments
-        .map((f, i) => `${i + 1}. "${f.content}" (palabra clave: ${f.keyword})`)
-        .join('\n')
-      
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [
-            {
-              role: 'user',
-              content: `Eres un escritor creativo. A continuación hay fragmentos de texto escritos por diferentes personas, cada uno con su palabra clave. Tu tarea es crear UNA HISTORIA COHERENTE Y CREATIVA que conecte estos fragmentos de manera natural y fluida.
+setLoadingStory(true)
 
-FRAGMENTOS:
-${fragmentsText}
+ try {
+      const intro = 'Esta historia se genera automáticamente a partir de los fragmentos más recientes:'
+      const selectedFragments = fragments.slice(0, 6)
 
-INSTRUCCIONES:
-- Crea una narrativa que incorpore las IDEAS de estos fragmentos (no copies textualmente)
-- La historia debe fluir naturalmente, como si fuera un cuento corto
-- Puedes reinterpretar y conectar los fragmentos creativamente
-- Máximo 400 palabras
-- Escribe en español
-- NO uses formato de lista, solo prosa narrativa
-- Sé creativo y poético
-
-Escribe la historia ahora:`
-            }
-          ]
+      const paragraphs = selectedFragments.map((fragment, index) => {
+        const prefix = `Fragmento ${index + 1} (${fragment.keyword}):`
+        return `${prefix} ${fragment.content}`
         })
-      })
 
-      const data = await response.json()
-      
-      if (data.content && data.content[0] && data.content[0].text) {
-        setStory(data.content[0].text)
-      }
+      setStory([intro, '', ...paragraphs].join('\n'))
     } catch (err) {
-      console.error('Error generando historia:', err)
+      console.error('Error generando historia local:', err)
       setStory('No se pudo generar la historia en este momento.')
     } finally {
       setLoadingStory(false)
@@ -177,7 +145,7 @@ Escribe la historia ahora:`
       // Recargar fragmentos y regenerar historia
       await loadFragmentsAndGenerateStory()
       
-      alert('¡Fragmento publicado! La historia se está regenerando...')
+      alert('¡Fragmento publicado! La historia se está actualizando...')
       
       // Volver al home para ver la nueva historia
       setView('home')
@@ -201,7 +169,7 @@ Escribe la historia ahora:`
         <header className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-900 mb-3">Conexiones</h1>
           <p className="text-lg text-gray-600 mb-6">
-            Una historia colectiva creada por IA con palabras de muchas personas
+            Una historia colectiva creada automáticamente con palabras de muchas personas
           </p>
           
           {/* Navegación */}
