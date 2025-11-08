@@ -1,26 +1,19 @@
 import React from 'react'
 
-function StoryDisplay({ story, loading, fragmentCount, onRegenerate }) {
+function StoryDisplay({ story, loading, fragmentCount }) {
   return (
     <section className="mb-12">
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-8 shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              📖 La Historia Colectiva
-            </h2>
-            <p className="text-sm text-gray-600">
-              Generada automáticamente con {fragmentCount} fragmentos de la comunidad
-            </p>
-          </div>
-          
-          <button
-            onClick={onRegenerate}
-            disabled={loading}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            🔄 {loading ? 'Generando...' : 'Regenerar'}
-          </button>
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            📖 La Historia Colectiva
+          </h2>
+          <p className="text-sm text-gray-600">
+            Generada automáticamente con {fragmentCount} fragmentos de la comunidad
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Las nuevas aportaciones se integran en cuanto se publican, sin regenerar la historia completa.
+          </p>
         </div>
 
         {loading ? (
@@ -47,12 +40,6 @@ function StoryDisplay({ story, loading, fragmentCount, onRegenerate }) {
           </div>
         )}
       </div>
-
-      {story && !loading && (
-        <div className="mt-4 text-center text-sm text-gray-500">
-          💡 Cada vez que alguien agrega un fragmento, la historia se regenera automáticamente
-        </div>
-      )}
     </section>
   )
 }
