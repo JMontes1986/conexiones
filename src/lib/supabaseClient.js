@@ -2,11 +2,30 @@ import { createClient } from '@supabase/supabase-js'
 
 let cachedClient = null
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+function readFromImportMeta(key) {
+  if (typeof import.meta !== 'undefined' && import.meta?.env && key in import.meta.env) {
+    return import.meta.env[key]
+  }
+  return undefined
+}
+
+function readFromProcessEnv(key) {
+  if (typeof process !== 'undefined' && process?.env && key in process.env) {
+    return process.env[key]
+  }
+  return undefined
+}
 
 function readSupabaseConfig() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  const supabaseUrl =
+    readFromImportMeta('VITE_SUPABASE_URL') ??
+    readFromProcessEnv('VITE_SUPABASE_URL') ??
+    readFromProcessEnv('SUPABASE_URL')
+
+  const supabaseAnonKey =
+    readFromImportMeta('VITE_SUPABASE_ANON_KEY') ??
+    readFromProcessEnv('VITE_SUPABASE_ANON_KEY') ??
+    readFromProcessEnv('SUPABASE_ANON_KEY')
 
   return {
     supabaseUrl,
@@ -33,5 +52,3 @@ export function getSupabaseClient() {
   cachedClient = createClient(supabaseUrl, supabaseAnonKey)
   return cachedClient
 }
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
