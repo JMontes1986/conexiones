@@ -58,40 +58,29 @@ Los archivos optimizados se generarán en la carpeta `dist/`
 
 ### Deploy
 
-Puedes desplegar en cualquier plataforma:
+El proyecto está optimizado para desplegarse en **Vercel**.
 
-**Netlify:**
-```bash
-# Conecta tu repositorio y configura:
-# Build command: npm run build
-# Publish directory: dist
-```
+#### Opción 1: Conectar el repositorio
+1. Crea un nuevo proyecto en [Vercel](https://vercel.com/new) y selecciona este repositorio.
+2. Configura los comandos:
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+3. En la sección **Environment Variables**, agrega las claves de tu `.env` (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`).
+4. Despliega. Vercel usará el archivo `vercel.json` incluido para manejar correctamente el enrutamiento del SPA.
 
-
-### Quitar el mensaje "Password protected site" en Netlify
-
-> ℹ️ Si al abrir tu deploy ves el mensaje "Password protected site", desactiva la contraseña desde **Site settings → General → Site protection** en Netlify o limpia cualquier contraseña configurada en **Access control**. Esto asegura que la app quede disponible públicamente.
-
-Pasos rápidos:
-
-1. Abre tu proyecto en el panel de Netlify.
-2. Ve a **Site configuration → Site protection**.
-3. Desactiva la opción **Password protect your site** y guarda los cambios.
-4. Si configuraste accesos restringidos, visita **Access control** y elimina cualquier contraseña o lista de acceso.
-5. Refresca tu sitio; ya no debería aparecer la pantalla de bloqueo.
-
-> ✅ No es necesario modificar el código del proyecto; esta protección es una configuración propia de Netlify.
-> 
-**Vercel:**
+#### Opción 2: Usar Vercel CLI
 ```bash
 # Instala Vercel CLI
 npm i -g vercel
 
-# Deploy
+# Inicia el deploy (primera vez pedirá confirmar el proyecto)
 vercel
+
+# Deploy de producción
+vercel --prod
 ```
 
-No olvides configurar las variables de entorno en tu plataforma de hosting.
+> ℹ️ Si necesitas modificar variables o dominios personalizados, puedes hacerlo desde el panel de Vercel en cualquier momento.
 
 ## 🔒 Seguridad en Producción
 
