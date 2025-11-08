@@ -1,3 +1,5 @@
+import React from 'react'
+
 function KeywordForm({ value, onChange, onSubmit, loading }) {
   return (
     <form onSubmit={onSubmit} className="flex gap-2">
