@@ -5,7 +5,7 @@ import FragmentList from './components/FragmentList'
 import StoryDisplay from './components/StoryDisplay'
 
 const STORY_INTRO =
-  'Esta historia se genera automáticamente a partir de los fragmentos más recientes:'
+  'Esta historia colectiva narra un recorrido construido con los fragmentos más recientes:'
 
 function App() {
   const supabaseConfigured = isSupabaseConfigured()
@@ -37,12 +37,24 @@ function App() {
         return ''
       }
 
-      const paragraphs = fragments.map((fragment, index) => {
-        const prefix = `Fragmento ${index + 1} (${fragment.keyword}):`
-        return `${prefix} ${fragment.content}`
+      const connectors = [
+        'Iniciamos el recorrido en',
+        'Continuamos hacia',
+        'El camino nos conduce a',
+        'Más adelante exploramos',
+        'Seguimos descubriendo',
+        'Finalmente llegamos a'
+      ]
+
+      const journeySegments = fragments.map((fragment, index) => {
+        const connector = connectors[index] || 'Luego visitamos'
+        const keywordPart = fragment.keyword ? ` ${fragment.keyword}` : ''
+        const content = fragment.content.trim()
+
+        return `${connector}${keywordPart ? keywordPart : ''}. ${content}`
       })
 
-      return [STORY_INTRO, '', ...paragraphs].join('\n')
+      return [STORY_INTRO, '', ...journeySegments].join('\n\n')
     },
     []
   )
