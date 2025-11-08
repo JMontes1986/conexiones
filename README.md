@@ -32,6 +32,10 @@ VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu-clave-anonima-aqui
 ```
 
+> 💡 El archivo `.env.example` contiene un formato de referencia. Cópialo y reemplaza los valores con los de tu proyecto de
+> Supabase. Si despliegas en Vercel, agrega las mismas variables (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`) desde
+> **Settings → Environment Variables** para que la aplicación pueda conectarse a la base de datos.
+
 ### 3. Instalar Dependencias
 
 ```bash
