@@ -194,6 +194,8 @@ function App() {
         <p className="text-gray-600">
           Añade las variables de entorno <code className="bg-gray-100 px-2 py-1 rounded">VITE_SUPABASE_URL</code> y{' '}
           <code className="bg-gray-100 px-2 py-1 rounded">VITE_SUPABASE_ANON_KEY</code> en tu entorno de despliegue.
+          Puedes usar el archivo <code className="bg-gray-100 px-2 py-1 rounded">.env.example</code> como referencia y copiarlo
+          a <code className="bg-gray-100 px-2 py-1 rounded">.env</code> con tus credenciales.
         </p>
       </div>
     </div>
