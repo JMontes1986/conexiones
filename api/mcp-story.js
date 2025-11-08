@@ -1,6 +1,3 @@
-import { McpClient } from '@modelcontextprotocol/sdk/client';
-import { NodeWsTransport } from '@modelcontextprotocol/sdk/transports/node-ws';
-
 const DEFAULT_MODEL = 'gpt-4.1-mini';
 
 function buildPrompt({ fragments = [], context = '' }) {
@@ -28,35 +25,52 @@ function buildPrompt({ fragments = [], context = '' }) {
   return sections.join('\n\n');
 }
 
-async function createClient({ endpoint, apiKey, model }) {
-  if (!endpoint) {
-    throw new Error('MCP_SERVER_URL no está definido.');
-  }
-
+async function createChatCompletion({ apiKey, model, prompt }) {
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY no está definido.');
   }
 
-  const transport = new NodeWsTransport(endpoint, {
+  const endpoint = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1/chat/completions';
+
+  const body = {
+    model: model || DEFAULT_MODEL,
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.8,
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
-      'OpenAI-Beta': 'realtime=v1',
     },
+    body: JSON.stringify(body),
   });
 
-  const client = new McpClient({
-    name: 'conexiones-story-service',
-    version: '1.0.0',
-    transport,
-  });
+  if (!response.ok) {
+    const errorPayload = await safeReadJson(response);
+    const errorMessage = errorPayload?.error?.message || `OpenAI API error (${response.status})`;
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    throw error;
+  }
 
-  await client.connect();
+  const completion = await response.json();
 
-  const targetModel = model || DEFAULT_MODEL;
+  return completion?.choices?.[0]?.message?.content ?? '';
+}
 
-  await client.setModel(targetModel);
-
-  return client;
+async function safeReadJson(res) {
+  try {
+    return await res.json();
+  } catch (error) {
+    return null;
+  }
 }
 
 export default async function handler(req, res) {
@@ -87,21 +101,12 @@ export default async function handler(req, res) {
 
   const prompt = buildPrompt({ fragments, context });
 
-  let client;
-
   try {
-    client = await createClient({
-      endpoint: process.env.MCP_SERVER_URL,
+    const storyText = await createChatCompletion({
       apiKey: process.env.OPENAI_API_KEY,
       model,
+      prompt,
     });
-
-    const response = await client.createMessage({
-      role: 'user',
-      content: prompt,
-    });
-
-    const storyText = response?.content ?? '';
 
     if (!storyText) {
       throw new Error('Respuesta vacía del modelo');
@@ -109,16 +114,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ story: storyText });
   } catch (error) {
-    console.error('Error generando historia vía MCP:', error);
-    const statusCode = error.message && error.message.includes('no está definido') ? 500 : 502;
+    console.error('Error generando historia con OpenAI:', error);
+    const statusCode = error.status || (error.message && error.message.includes('no está definido') ? 500 : 502);
     return res.status(statusCode).json({ error: error.message ?? 'Error generando la historia' });
-  } finally {
-    if (client) {
-      try {
-        await client.close();
-      } catch (closeError) {
-        console.error('Error cerrando el cliente MCP:', closeError);
-      }
-    }
   }
 }
